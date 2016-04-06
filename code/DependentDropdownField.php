@@ -14,7 +14,11 @@ class DependentDropdownField extends DropdownField
 
     protected $depends;
     protected $unselected;
-    
+
+    /**
+     * @var array
+     */
+    protected $nonCallableSource = array();
     
     public function __construct($name, $title = null, $source = array(), $value = '', $form = null, $emptyString = null)
     {
@@ -63,10 +67,41 @@ class DependentDropdownField extends DropdownField
         return $this;
     }
 
+    /**
+     * @param array $source
+     * @return DependentDropdownField
+     */
+    public function setNonCallableSource($source)
+    {
+        $this->nonCallableSource = $source;
+        // No point in having an unselected string, if we're setting a default source
+        $this->setUnselectedString(null);
+
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getNonCallableSource()
+    {
+        return $this->nonCallableSource;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAltSource()
+    {
+        $nonCallableSource = $this->getNonCallableSource();
+        $parentSource = parent::getSource();
+        return !$nonCallableSource ? $parentSource : $nonCallableSource;
+    }
+
     public function getSource()
     {
         if (!is_callable($this->source)) {
-            return parent::getSource();
+            return $this->getAltSource();
         }
 
         $val = $this->depends->Value();
@@ -77,7 +112,7 @@ class DependentDropdownField extends DropdownField
         }
 
         if (!$val) {
-            $source = array();
+            $source = $this->getAltSource();
         } else {
             $source = call_user_func($this->source, $val);
         }
